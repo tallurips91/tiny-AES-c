@@ -2,3 +2,5 @@
 /test.elf
 /test.map
 test_package/build
+*.swp
+*.d

@@ -1,12 +1,16 @@
 #CC           = avr-gcc
 #CFLAGS       = -Wall -mmcu=atmega16 -Os -Wl,-Map,test.map
 #OBJCOPY      = avr-objcopy
-CC           = gcc
-LD           = gcc
+#CC           = gcc
+#LD           = gcc
+CC           = /opt/riscv32i/bin/riscv32-unknown-elf-gcc
+LD           = /opt/riscv32i/bin/riscv32-unknown-elf-gcc
 AR           = ar
 ARFLAGS      = rcs
-CFLAGS       = -Wall -Os -c
-LDFLAGS      = -Wall -Os -Wl,-Map,test.map
+#CFLAGS       = -Wall -Os -c
+#LDFLAGS      = -Wall -Os -Wl,-Map,test.map
+CFLAGS       = -c -MD -O3 -march=rv32i -DTIME -DRISCV -Wno-implicit-int -Wno-implicit-function-declaration
+LDFLAGS      = -MD -O3 -march=rv32i -DTIME -DRISCV -Wl,-Bstatic,-Map,test.map,--strip-debug -lgcc -lc
 ifdef AES192
 CFLAGS += -DAES192=1
 endif
@@ -15,14 +19,15 @@ CFLAGS += -DAES256=1
 endif
 
 OBJCOPYFLAGS = -j .text -O ihex
-OBJCOPY      = objcopy
+OBJCOPY      = /opt/riscv32i/bin/riscv32-unknown-elf-objcopy
+OBJDUMP      = /opt/riscv32i/bin/riscv32-unknown-elf-objdump
 
 # include path to AVR library
 INCLUDE_PATH = /usr/lib/avr/include
 # splint static check
 SPLINT       = splint test.c aes.c -I$(INCLUDE_PATH) +charindex -unrecog
 
-default: test.elf
+default: aes_test.bin
 
 .SILENT:
 .PHONY:  lint clean
@@ -42,6 +47,10 @@ aes.o : aes.c aes.h
 test.elf : aes.o test.o
 	echo [LD] $@
 	$(LD) $(LDFLAGS) -o $@ $^
+
+aes_test.bin : test.elf
+	$(OBJCOPY) -O binary test.elf  aes_test.bin
+	$(OBJDUMP) -d -M no-aliases test.elf > disass
 
 aes.a : aes.o
 	echo [AR] $@
